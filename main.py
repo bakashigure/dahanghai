@@ -15,23 +15,25 @@ credential = Credential()
 
 path = os.path.dirname(os.path.abspath(__file__))+'/account.json'
 print(f"账号json路径: {path}")
-print(f"当前版本 v1.0.3")
+print(f"当前版本 v1.0.4")
 with open(path, 'r') as f:
     data = json.load(f)
-    sessdata, bili_jct, buvid3 = data['sessdata'], data['bili_jct'], data['buvid3']
+    sessdata, bili_jct, buvid3, can_send_danmu = data['sessdata'], data['bili_jct'], data['buvid3'],data['send_danmu']
     credential=Credential(sessdata, bili_jct, buvid3)
 
+"""
 _live_info = sync(live.get_self_live_info(credential))
 _live_guard = _live_info['count']['guard']  # 当前大航海数量
 _live_fans_medal = _live_info['count']['fans_medal']  # 当前粉丝勋章数量
 _live_title = _live_info['count']['title']  # 活动头衔
 
 _live_guard_pages = ceil(_live_guard/10)  # 分页大航海页数
-
+"""
 
 _danmu=["(｡･ω･｡)ﾉ♡","(^・ω・^ )","(=・ω・=)","(°∀°)ﾉ","w(ﾟДﾟ)w","Σ( ° △ °|||)"]
 _danmu_len = len(_danmu)
 
+"""
 def get_guard_list():
     _my_guards= sync(live.get_self_guards(credential,1))['list']
 
@@ -40,10 +42,26 @@ def get_guard_list():
         sleep(0.5)
         _my_guards+=((sync(live.get_self_guards(credential,page)))['list'])
     return _my_guards
+
 print(f"当前账号大航海数量: {_live_guard}")
 _guard_list = get_guard_list()
+"""
+
+
+def get_new_guard_list():
+    room = live.LiveRoom(room_display_id=593,credential=credential)
+    res = sync(room.get_general_info(actId=100061))
+    _my_guards= res['subData']['openList']
+    return _my_guards
+
+_my_guards=get_new_guard_list()
+_my_guards_len = len(_my_guards)
+
 
 def get_bagid_and_nums():
+    """
+    返回一个数量最多的打call棒背包id和数量
+    """
     call = dict()
     bag = sync(live.get_self_bag(credential))
     for item in bag['list']:
@@ -105,20 +123,20 @@ def guard_level(room:live.LiveRoom):
 
 
 
-for i in range(1,_live_guard+1):
-    print(f"{i}/{_live_guard}")
-    info = _guard_list[i-1]
+for i in range(1,_my_guards_len+1):
+    print(f"{i}/{_my_guards_len}")
+    info = _my_guards[i-1]
     #print(info)
-    room2 = live.LiveRoom(info['room_id'],credential)
+    room2 = live.LiveRoom(info['roomId'],credential)
     sleep(1)
-    print(f"进入直播间 room_id: {info['room_id']}  |  rusername: {info['rusername']}  |  live_status: {info['live_status']}")
-    status,level = guard_level(room2)
-    if status != 2:
+    print(f"进入直播间 room_id: {info['roomId']}  |  live_status: {info['liveStatus']}")
+    status,level = info['isPay'],info['level']
+    if status != 1:
         print(f"    未在当前直播间开通船长日志, 跳过\n")
         continue
     else:
         print(f"    已开通该直播间船长日志,当前等级: {level}")
-
+    sleep(1)
     print(f"    尝试签到")
     #task_id = 1447 # 大航海签到
     __res=sync(room2.get_room_play_info())
@@ -126,7 +144,7 @@ for i in range(1,_live_guard+1):
     _res = sync(room2.send_task(1447))
     #print(f"    {_res}")
     print(f"    已签到")
-    sleep(1)
+    sleep(2)
     print(f"    尝试赠送两个打call棒")
     bag_id, nums = get_bagid_and_nums()
     print(f"    使用包裹id: {bag_id} , 此包裹剩余打call棒数量{nums}")
@@ -140,9 +158,11 @@ for i in range(1,_live_guard+1):
         print(f"    打call棒数量不足")
     sleep(3)
 
-    send_danmu(room2)
-
-    sleep(2)
+    if(can_send_danmu)=="1":
+        send_danmu(room2)
+        sleep(2)
+    else:
+        print(f"    设置不发弹幕, 可在account.json里修改")
     print(f"    尝试领取奖励")
     reveive_reward(room2)
     print("\n")
