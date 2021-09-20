@@ -15,7 +15,7 @@ credential = Credential()
 
 path = os.path.dirname(os.path.abspath(__file__))+'/account.json'
 print(f"账号json路径: {path}")
-print(f"当前版本 v1.0.0")
+print(f"当前版本 v1.0.3")
 with open(path, 'r') as f:
     data = json.load(f)
     sessdata, bili_jct, buvid3 = data['sessdata'], data['bili_jct'], data['buvid3']
@@ -79,12 +79,30 @@ def send_danmu(room):
             print(f"    {_} 发送弹幕频率过快!")
 
 def reveive_reward(room:live.LiveRoom):
+    """
+    领取礼物
+    """
     res = sync(room.receive_reward(2))
     if res['status_code']==0:
         _rewards= ','.join([f"{item['name']}:{item['num']} " for item in res['awards_list']])
         print(f"    成功领取 {_rewards}")
     elif res['status_code']==2:
         print(f"    该直播间暂无可领取奖励.")
+
+def guard_level(room:live.LiveRoom):
+    """
+    当前大航海状态
+    返回 (级别, 等级)
+    级别: 0 -> 未开通
+          1 -> 水手日志
+          2 -> 船长日志
+    """
+    res = sync(room.get_general_info(actId=100061))
+    status = res['subData']['openStatus']
+    level = res['subData']['level']
+    return status,level
+
+
 
 
 for i in range(1,_live_guard+1):
@@ -94,6 +112,13 @@ for i in range(1,_live_guard+1):
     room2 = live.LiveRoom(info['room_id'],credential)
     sleep(1)
     print(f"进入直播间 room_id: {info['room_id']}  |  rusername: {info['rusername']}  |  live_status: {info['live_status']}")
+    status,level = guard_level(room2)
+    if status != 2:
+        print(f"    未在当前直播间开通船长日志, 跳过\n")
+        continue
+    else:
+        print(f"    已开通该直播间船长日志,当前等级: {level}")
+
     print(f"    尝试签到")
     #task_id = 1447 # 大航海签到
     __res=sync(room2.get_room_play_info())
@@ -117,6 +142,7 @@ for i in range(1,_live_guard+1):
 
     send_danmu(room2)
 
+    sleep(2)
     print(f"    尝试领取奖励")
     reveive_reward(room2)
     print("\n")
