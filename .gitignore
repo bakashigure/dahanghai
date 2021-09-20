@@ -7,6 +7,7 @@ __pycache__/
 *.so
 
 # Distribution / packaging
+auth.py
 .Python
 build/
 develop-eggs/
@@ -27,6 +28,8 @@ share/python-wheels/
 *.egg
 MANIFEST
 
+account.json
+launch.json
 # PyInstaller
 #  Usually these files are written by a python script from a template
 #  before PyInstaller builds the exe, so as to inject date/other infos into it.
